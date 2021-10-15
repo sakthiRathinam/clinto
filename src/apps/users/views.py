@@ -8,6 +8,7 @@ from tortoise.query_utils import Q
 from src.apps.auth.security import get_password_hash,verify_password
 from src.apps.auth.permissions import get_user
 from fastapi.security import APIKeyCookie
+from fastapi import Body
 from starlette.responses import Response, HTMLResponse
 from starlette import status
 from src.config.settings import SECRET_KEY
@@ -36,7 +37,7 @@ async def getUser(userid:int):
     return {"userData": user_serialized, "permissions": permissions}
 
 @user_router.post('/login')
-async def save_cookie_user(response:Response,username:str = None ,password:str = None):
+async def save_cookie_user(response:Response,username:str = Body(...) ,password:str = Body(...)):
     if username and password is not None:
         authenticate = await user_service.authenticate(username, password)
         if authenticate is not None:
@@ -48,7 +49,7 @@ async def save_cookie_user(response:Response,username:str = None ,password:str =
                 {"username": username, "expires": str(expire)}, SECRET_KEY)
             print(response)
             response.set_cookie("session", token)
-            return {"success":"login successfully"}
+            return {"success":"login successfully","user":user}
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Invalid user or password"
@@ -72,8 +73,9 @@ def get_current_login(session:str = Depends(cookie_sec)):
     
         
 @user_router.get('/checkSession')
-def check_session(session: str = Depends(get_current_login)):
+def check_session(session: str = Depends(get_current_login)) -> str:
     print(session,"imhereee")
+    return "session available"
 
 
 @user_router.get('/hashedpassword')
@@ -150,7 +152,6 @@ async def create_user(user: User_Pydantic,tasks:BackgroundTasks,response:Respons
             return JSONResponse({"error":"user already exists"},status_code=500)
         return JSONResponse({"user": "usercreated"}, status_code=201)
     user_create = await user_service.create_user(user)
-    user_obj = await User.get(username=user.username)
     return JSONResponse({"user":"usercreated"},status_code=201)
     
 
@@ -166,6 +167,11 @@ def play_request(request: Request,item:int):
     print(request.path_params)
     print(request.query_params['path'])
 
+
+@user_router.get('/searchUsers')
+async def search_users(role: Roles, name: str, user : str=Depends(get_current_login)):
+    toReturn = await User.filter(roles=role, first_name__istartswith=name).only('id','username','first_name','last_name')
+    return toReturn[:5]
 
 
 

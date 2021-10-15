@@ -24,6 +24,15 @@ class MedicineViewSet(BaseService):
     model = Medicine
     get_schema = GET_Doctor
     
+class PrescriptionViewSet(BaseService):
+    model = Prescription
+    get_schema = GET_Doctor
+    
+class PrescriptionMedicines(BaseService):
+    model = PresMedicines
+    get_schema = GET_Prescription
+    
+    
 class AppointmentViewSet(BaseService):
     model = Appointments
     get_schema = GET_Appointments

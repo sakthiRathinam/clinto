@@ -3,6 +3,9 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from enum import Enum, IntEnum
 from typing import List
 from tortoise.exceptions import NoValuesFetched
+from tortoise.signals import post_delete, post_save, pre_delete, pre_save
+
+from src.apps.base.additionalfields import StringArrayField
 
 class Roles(str,Enum):
     Doctor = "Doctor"
@@ -10,8 +13,20 @@ class Roles(str,Enum):
     Recoponist = "Recoponist"
     PharmacyOwner = "PharmacyOwner"
     LabOwner = "LabOwner"
+    Admin = "Admin"
 
 
+class InventoryCategory(str, Enum):
+    Doctor = "Doctor"
+    MedicalStore = "MedicalStore"
+    Clinic = "Clinic"
+    Lab = "Lab"
+class Inventory(models.Model):
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    title = fields.CharField(max_length=400)
+    types: InventoryCategory = fields.CharEnumField(
+        InventoryCategory, default=InventoryCategory.Clinic)
 class PermissionLevel(str, Enum):
     Admin = "Admin"
     Emp = "Emp"
@@ -36,12 +51,20 @@ class User(models.Model):
     first_name = fields.CharField(max_length=100,default="")
     last_name = fields.CharField(max_length=100, null=True,default="")
     date_join = fields.DatetimeField(auto_now_add=True)
+    qualifications = StringArrayField(null=True,blank=True)
+    specialization = StringArrayField(null=True,blank=True)
     last_login = fields.DatetimeField(null=True)
+    experience = fields.IntField(null=True,blank=True)
     is_active = fields.BooleanField(default=True)
     is_staff = fields.BooleanField(default=False)
     currently_active = fields.BooleanField(default=False)
+    display_picture = fields.CharField(max_length=2000, default="")
     is_superuser = fields.BooleanField(default=False)
     avatar = fields.CharField(max_length=1000, null=True)
+    personal_inventory = fields.BooleanField(default=False)
+    created_subs = fields.BooleanField(default=False)
+    inventory: fields.ForeignKeyRelation[Inventory] = fields.ForeignKeyField(
+        "models.Inventory", related_name="personalinventories", null=True, blank=True)
     # social_accounts: fields.ReverseRelation['SocialAccount']
     def full_name(self) -> str:
         return self.first_name + self.last_name
@@ -56,6 +79,21 @@ Users_Pydantic = pydantic_model_creator(User,name="UserCreate",exclude_readonly=
 UserIn_Pydantic = pydantic_model_creator(
     User, name="UserIn", exclude_readonly=True)
 
+
+@post_save(User)
+async def signal_post_doctor(
+    sender: "Type[User]",
+    instance: User,
+    created: bool,
+    using_db: "Optional[BaseDBAsyncClient]",
+    update_fields: List[str],
+) -> None:
+    if not instance.created_subs:
+        if instance.personal_inventory:
+            inventry_obj = await Inventory.create(title=instance.username,types="Doctor")
+            instance.created_subs = True
+            instance.inventory = inventry_obj
+            await instance.save()
 
     
 

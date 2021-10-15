@@ -5,7 +5,7 @@ from typing import List
 from tortoise.exceptions import NoValuesFetched
 from tortoise.models import Model
 from tortoise.signals import post_delete, post_save, pre_delete, pre_save
-from src.apps.users.models import User
+from src.apps.users.models import User ,Inventory
 from src.apps.base.additionalfields import StringArrayField
 class Types(str, Enum):
     MedicalStore = "MedicalStore"
@@ -74,12 +74,12 @@ class MedicineTypes(str,Enum):
     Solution = "Solution"
     Others = "Others"
     
-class Inventory(models.Model):
-    created = fields.DatetimeField(auto_now_add=True)
-    updated = fields.DatetimeField(auto_now=True)
-    title = fields.CharField(max_length=400)
-    types: InventoryCategory = fields.CharEnumField(
-        InventoryCategory, default=InventoryCategory.Clinic)
+# class Inventory(models.Model):
+#     created = fields.DatetimeField(auto_now_add=True)
+#     updated = fields.DatetimeField(auto_now=True)
+#     title = fields.CharField(max_length=400)
+#     types: InventoryCategory = fields.CharEnumField(
+#         InventoryCategory, default=InventoryCategory.Clinic)
 
 class ClinicTimings(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
@@ -96,6 +96,7 @@ class Clinic(models.Model):
     name = fields.CharField(max_length=400, index=True)
     email = fields.CharField(max_length=600,null=True,blank=True)
     mobile = fields.CharField(max_length=20,null=True,blank=True)
+    drug_license = fields.CharField(max_length=1000,null=True,blank=True)
     notificationId = fields.CharField(max_length=500, null=True, blank=True)
     address = fields.TextField(max_length=5000,null=True,blank=True)
     types: Types = fields.CharEnumField(Types,default=Types.Clinic)
@@ -107,23 +108,28 @@ class Clinic(models.Model):
     lang = fields.CharField(null=True, max_length=200, blank=True)
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
+    display_picture = fields.CharField(null=True, max_length=2000,blank=True)
+    pincode = fields.CharField(null=True, max_length=300,blank=True)
+    gst_percentage = fields.FloatField(default=0)
     discount_percent = fields.IntField(default=0)
+    gst_no = fields.CharField(max_length=1000, null=True, blank=True)
     clinic_images = StringArrayField(null=True)
     created_subs = fields.BooleanField(default=False)
     inventoryIncluded = fields.BooleanField(default=False)
     timings: fields.ManyToManyRelation["ClinicTimings"] = fields.ManyToManyField(
         "models.ClinicTimings", related_name="clinictimigs")
     inventory: fields.ForeignKeyRelation[Inventory] = fields.ForeignKeyField(
-        "models.Inventory", related_name="inventory",null=True,blank=True)
+        "models.Inventory", related_name="clinicinventories",null=True, blank=True)
     active = fields.BooleanField(default=True)
-    def clinicTimings(self) -> str:
-        if self.timings.all() is not None:
-            return [timing.timings for timing in self.timings.all()]
-        return "opened"
+    # def clinicTimings(self) -> str:
+    #     if self.timings.all() is not None:
+    #         return [timing.timings for timing in self.timings.all()]
+    #     return "opened"
 
     class PydanticMeta:
-        computed = ["clinicTimings"]
-        exclude = ('timings', 'clinicTimings')
+        computed = []
+        exclude = ('timings',
+                   'clinic_images')
 
     
 class ClinicDoctors(models.Model):
@@ -134,10 +140,13 @@ class ClinicDoctors(models.Model):
     timings: fields.ManyToManyRelation["ClinicTimings"] = fields.ManyToManyField(
         "models.ClinicTimings", related_name="doctortimigs", through="doctor_timings"
     )
+    personal_inventory = fields.BooleanField(default=False)
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
     active = fields.BooleanField(default=False)
     owner_access = fields.BooleanField(default=False)
+    doctor_access = fields.BooleanField(default=True)
+    subs = fields.BooleanField(default=False)
     
     
 class ClinicReceponists(models.Model):
@@ -145,8 +154,6 @@ class ClinicReceponists(models.Model):
     updated = fields.DatetimeField(auto_now=True)
     starttime_str = fields.CharField(max_length=600, null=True, blank=True)
     endtime_str = fields.CharField(max_length=600, null=True, blank=True)
-    starttime = fields.DateField(null=True,blank=True)
-    endtime = fields.DateField(null=True,blank=True)
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
         "models.User", related_name="workingshops")
     clinic: fields.ForeignKeyRelation[Clinic] = fields.ForeignKeyField(
@@ -181,6 +188,7 @@ class Appointments(models.Model):
         AppointmentStatus, default=AppointmentStatus.Pending)
     doctor: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
         "models.User", related_name="doctorappointments")
+    
 class Medicine(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
@@ -191,6 +199,13 @@ class Medicine(models.Model):
     active = fields.BooleanField(default=False)
     
 class Diagonsis(models.Model):
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    title = fields.CharField(max_length=1000, unique=True)
+    active = fields.BooleanField(default=False)
+    
+    
+class MedicalReports(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
     title = fields.CharField(max_length=1000, unique=True)
@@ -211,10 +226,17 @@ class PresMedicines(models.Model):
     total_qty = fields.FloatField(default=0)
     command = fields.TextField(null=True, blank=True, max_length=4000)
     is_drug = fields.BooleanField(default=False)
+    before_food = fields.BooleanField(default=False)
     is_given = fields.BooleanField(default=False)
     fromDate = fields.DateField(null=True, blank=True)
     toDate = fields.DateField(null=True, blank=True)
     days = fields.FloatField(default=0)
+    
+    
+# class LabReports(models.Model):
+#     created = fields.DatetimeField(auto_now_add=True)
+#     updated = fields.DatetimeField(auto_now=True)
+    
     
 class Prescription(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
@@ -230,6 +252,7 @@ class Prescription(models.Model):
     diagonsis_list: fields.ManyToManyRelation["Diagonsis"] = fields.ManyToManyField(
         "models.Diagonsis", related_name="presdiseases")
     active = fields.BooleanField(default=True)
+    create_template = fields.BooleanField(default=False)
     personal_prescription = fields.BooleanField(default=False)
     rating_taken = fields.BooleanField(default=False)
     receponist: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
@@ -239,11 +262,12 @@ class Prescription(models.Model):
     age = fields.IntField(default=0)
     next_visit = fields.DateField(null=True, blank=True)
     contains_drug = fields.BooleanField(default=False)
+    is_template = fields.BooleanField(default=False)
     
 class PrescriptionTemplates(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
-    age_group = fields.CharField(max_length=1000)
+    command = fields.TextField(max_length=2000,null=True,blank=True)
     diagonsis: fields.ForeignKeyRelation[Diagonsis] = fields.ForeignKeyField(
         "models.Diagonsis", related_name="templatediagonsis")
     medicines: fields.ManyToManyRelation["PresMedicines"] = fields.ManyToManyField(
@@ -254,21 +278,8 @@ class PrescriptionTemplates(models.Model):
     doctor: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
         "models.Clinic", related_name="doctortemplates", null=True, blank=True)
     personal = fields.BooleanField(default=False)
-
-
-
-
-
-
-    
-    
     
 
-    
-    
-
-
-    
 @pre_save(Clinic)
 async def signal_pre_save(
     sender: "Type[Clinic]", instance: Clinic, using_db, update_fields
@@ -285,24 +296,30 @@ async def signal_post_save(
     using_db: "Optional[BaseDBAsyncClient]",
     update_fields: List[str],
 ) -> None:
-    for day in days:
-        timings_object = await ClinicTimings.create(day=day,timings=[])
-        await instance.timings.add(timings_object)
-    instance.save()
+    if not instance.created_subs:
+        for day in days:
+            timings_object = await ClinicTimings.create(day=day,timings=[])
+            await instance.timings.add(timings_object)
+        instance.created_subs = True
+        inventry_obj = await Inventory.create(title=instance.username, types="Doctor")
+        instance.inventory = inventry_obj
+        await instance.save()
     print("successs")
     
     
 @post_save(ClinicDoctors)
 async def signal_post_doctor(
-    sender: "Type[Clinic]",
-    instance: Clinic,
+    sender: "Type[ClinicDoctors]",
+    instance: ClinicDoctors,
     created: bool,
     using_db: "Optional[BaseDBAsyncClient]",
     update_fields: List[str],
 ) -> None:
-    for day in days:
-        timings_object = await ClinicTimings.create(day=day, timings=[])
-        await instance.timings.add(timings_object)
-    instance.save()
+    if not instance.subs:
+        for day in days:
+            timings_object = await ClinicTimings.create(day=day, timings=[])
+            await instance.timings.add(timings_object)
+        instance.subs = True
+        await instance.save()
     print("successs")
     

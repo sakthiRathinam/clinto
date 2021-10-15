@@ -62,6 +62,35 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongodb:27017/
     depends_on: 
       - mongodb
+  redis:
+    container_name: clinto-redis
+    image: redis:6.2-alpine
+  celery:
+    container_name: clinto-celery
+    build:
+      context: .
+    command: celery -A src.apps.celery.celerymain.celery_app worker --loglevel=info
+    env_file:
+      - ./env/fastapi.env
+    volumes:
+      - .:/app
+    depends_on:
+      - clintonew
+      - redis
+  celerybeat:
+    container_name: clinto-celery-beat
+    build:
+      context: .
+    command: celery -A src.apps.celery.celerymain.celery_app beat -l info
+    env_file:
+      - ./env/fastapi.env
+    volumes:
+      - .:/app
+    depends_on:
+      - clintonew
+      - celery
+      - redis
+
 
 
 volumes:

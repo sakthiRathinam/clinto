@@ -3,7 +3,7 @@ from typing import Optional
 from tortoise.query_utils import Q
 
 from src.apps.auth.security import verify_password, get_password_hash
-
+from typing import TypeVar, Type, Optional
 from . import schema
 from .models import *
 from ..base.service_base import BaseService
