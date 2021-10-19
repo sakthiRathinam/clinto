@@ -21,7 +21,7 @@ celery_app.conf.beat_schedule = {
     # Executes every Monday morning at 7:30 a.m.
     'add-every-evening-night-morning': {
         'task': 'create_task',
-        'schedule':crontab(hour='8,9,13,14,20,21',minute=0,day_of_week="mon,tue,wed,thu,fri,sat,sun"),
+        'schedule':crontab(hour='8,6,9,13,14,20,21',minute=0,day_of_week="mon,tue,wed,thu,fri,sat,sun"),
         'args': (16, 16),
     },
 }

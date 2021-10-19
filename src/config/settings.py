@@ -8,7 +8,8 @@ SECRET_KEY = "5994f0aa99574b68fb9ba9582758eca935ba7ce3"
 
 # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
+RAZOR_API_KEY = os.environ.get("RAZOR_API_KEY")
+RAZOR_SECRET_KEY = os.environ.get("RAZOR_SECRET_KEY")
 
 BASE_DIR = pathlib.Path(__file__).parent.parent.parent
 
@@ -30,6 +31,7 @@ BACKEND_CORS_ORIGINS = [
     "http://localhost:8080",
     "http://192.168.29.12",
     "http://192.168.29.98",
+    '*',
     "http://192.168.29.242",
 ]
 
@@ -72,6 +74,8 @@ APPS_MODELS = [
     "src.apps.users.models",
     "src.apps.auth.models",
     "src.apps.prescriptionapp.models",
+    "src.apps.razorpay.models",
+    "src.apps.dunzo.models",
     "aerich.models",
 
 ]

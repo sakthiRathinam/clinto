@@ -21,6 +21,7 @@ class SubTypes(str, Enum):
     dermatology = "dermatology"
     throat = "throat"
     nose = "nose"
+    normal = "normal"
     gastroenterology = "gastroenterology"
     obstetrics = "obstetrics"
     podiatry = "podiatry"
@@ -100,7 +101,7 @@ class Clinic(models.Model):
     notificationId = fields.CharField(max_length=500, null=True, blank=True)
     address = fields.TextField(max_length=5000,null=True,blank=True)
     types: Types = fields.CharEnumField(Types,default=Types.Clinic)
-    sub_types: SubTypes = fields.CharEnumField(SubTypes,default=SubTypes.eye)
+    sub_types: SubTypes = fields.CharEnumField(SubTypes,default=SubTypes.eye,null=True,blank=True)
     total_ratings = fields.IntField(default=0)
     city = fields.CharField(null=True, max_length=500, blank=True)
     state = fields.CharField(null=True, max_length=500, blank=True)
@@ -196,13 +197,20 @@ class Medicine(models.Model):
     type: MedicineTypes = fields.CharEnumField(
         MedicineTypes, default=MedicineTypes.Capsules)
     title = fields.CharField(max_length=1000,unique=True)
+    brand = fields.CharField(max_length=500,null=True,blank=True)
     active = fields.BooleanField(default=False)
+    
+    # class Meta:
+    #     unique_together = (("title", "brand"), )
+
     
 class Diagonsis(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
     title = fields.CharField(max_length=1000, unique=True)
     active = fields.BooleanField(default=False)
+    
+
     
     
 class MedicalReports(models.Model):
@@ -218,6 +226,7 @@ class PresMedicines(models.Model):
         "models.Medicine", related_name="prescribedmedicines")
     diagonsis: fields.ForeignKeyRelation[Diagonsis] = fields.ForeignKeyField(
         "models.Diagonsis", related_name="diagonsismedicines")
+    create_template = fields.BooleanField(default=False)
     morning_count = fields.FloatField(default=0)
     afternoon_count = fields.FloatField(default=0)
     invalid_count = fields.FloatField(default=0)
@@ -251,6 +260,8 @@ class Prescription(models.Model):
         "models.PresMedicines", related_name="presmedicines")
     diagonsis_list: fields.ManyToManyRelation["Diagonsis"] = fields.ManyToManyField(
         "models.Diagonsis", related_name="presdiseases")
+    medical_reports: fields.ManyToManyRelation["MedicalReports"] = fields.ManyToManyField(
+        "models.MedicalReports", related_name="presreports")
     active = fields.BooleanField(default=True)
     create_template = fields.BooleanField(default=False)
     personal_prescription = fields.BooleanField(default=False)
@@ -280,6 +291,8 @@ class PrescriptionTemplates(models.Model):
     personal = fields.BooleanField(default=False)
     
 
+    
+
 @pre_save(Clinic)
 async def signal_pre_save(
     sender: "Type[Clinic]", instance: Clinic, using_db, update_fields
@@ -301,7 +314,7 @@ async def signal_post_save(
             timings_object = await ClinicTimings.create(day=day,timings=[])
             await instance.timings.add(timings_object)
         instance.created_subs = True
-        inventry_obj = await Inventory.create(title=instance.username, types="Doctor")
+        inventry_obj = await Inventory.create(title=instance.name, types=instance.types)
         instance.inventory = inventry_obj
         await instance.save()
     print("successs")
@@ -322,4 +335,6 @@ async def signal_post_doctor(
         instance.subs = True
         await instance.save()
     print("successs")
+    
+
     

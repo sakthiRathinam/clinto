@@ -36,19 +36,26 @@ class PrescriptionMedicines(BaseModel):
     is_given: Optional[bool] = False
     days: int = 0
     medicine: int
+    
+class CreateTemplate(BaseModel):
+    diagonsis:str
+    command:str
+    template:Optional[bool] = False
+    medicines_list:List[PrescriptionMedicines]
 class AddPrescription(BaseModel):
     active : bool = True
     personal_prescription : bool = False
     contains_drug: Optional[bool] = False
     is_template: Optional[bool] = False
+    appointment_taken: Optional[bool] = False
     doctor_fees: int
-    user : int
-    clinic : Optional[int] = None
-    doctor : Optional[int] = None
-    receponist : Optional[int]
-    diagonsis_list : List[str]
-    report_list : Optional[List[str]] = []
-    medicines: List[PrescriptionMedicines]
+    user_id : int
+    clinic_id : Optional[int] = None
+    doctor_id : Optional[int] = None
+    receponist_id : Optional[int]
+    diagonsis: List[CreateTemplate]
+    reports : Optional[List[str]] = []
+    
 
 class AddExistingDoctor(BaseModel):
     doctor:int

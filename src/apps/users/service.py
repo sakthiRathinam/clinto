@@ -50,7 +50,8 @@ class UserService(BaseService):
         hashed_password = get_password_hash(user.dict().pop('password'))
         return await self.create(self.create_schema(**user.dict(exclude={'password'}),password=hashed_password,is_superuser=True,**kwargs))
 
-
+    
+        
 
 
 

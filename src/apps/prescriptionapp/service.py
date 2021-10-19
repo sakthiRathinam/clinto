@@ -48,12 +48,23 @@ class SlotViewSet(BaseService):
     model = AppointmentSlots
     get_schema = GET_Slots
     
+class MedicineViewSet(BaseService):
+    model = Medicine
+    get_schema = GET_Medicine
+    
+class ReportViewSet(BaseService):
+    model = MedicalReports
+    get_schema = GET_Reports
+    
 ##########################################routers#####################################################
 clinic_view = ClincViewSet()
 receponist_view = ReceponistViewSet()
 doctor_view = DoctorViewSet()
 appointment_view = AppointmentViewSet()
 slot_view = SlotViewSet()
+medicine_view = MedicineViewSet()
+report_view = ReportViewSet()
+
 
 
     

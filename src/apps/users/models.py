@@ -2,6 +2,7 @@ from tortoise import fields, models, Tortoise ,run_async
 from tortoise.contrib.pydantic import pydantic_model_creator
 from enum import Enum, IntEnum
 from typing import List
+import datetime
 from tortoise.exceptions import NoValuesFetched
 from tortoise.signals import post_delete, post_save, pre_delete, pre_save
 
@@ -21,6 +22,13 @@ class InventoryCategory(str, Enum):
     MedicalStore = "MedicalStore"
     Clinic = "Clinic"
     Lab = "Lab"
+class RazorPayPlans(str, Enum):
+    Monthly = "Monthly"
+    Quarterly = "Quarterly"
+    Yearly = "Yearly"
+    Halfly = "Halfly"
+    
+
 class Inventory(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
@@ -38,6 +46,10 @@ class Permissions(models.Model):
         PermissionLevel, default=PermissionLevel.Admin)
     updated = fields.DatetimeField(auto_now=True)
     permissions: fields.ReverseRelation["User"]
+    
+
+
+
 class User(models.Model):
     """ Model user """
     username = fields.CharField(max_length=100, unique=True)
@@ -50,7 +62,12 @@ class User(models.Model):
     password = fields.CharField(max_length=100)
     first_name = fields.CharField(max_length=100,default="")
     last_name = fields.CharField(max_length=100, null=True,default="")
+    city = fields.CharField(max_length=800, null=True,default="")
+    state = fields.CharField(max_length=800, null=True,default="")
+    country = fields.CharField(max_length=800, null=True,default="")
+    date_of_birth = fields.DateField(default=datetime.date.today())
     date_join = fields.DatetimeField(auto_now_add=True)
+    address = fields.TextField(max_length=3000, null=True, default="")
     qualifications = StringArrayField(null=True,blank=True)
     specialization = StringArrayField(null=True,blank=True)
     last_login = fields.DatetimeField(null=True)
@@ -68,9 +85,20 @@ class User(models.Model):
     # social_accounts: fields.ReverseRelation['SocialAccount']
     def full_name(self) -> str:
         return self.first_name + self.last_name
+    
+    def age(self) -> int:
+        if self.date_of_birth is not None:
+            print("hereeee")
+            year = 365.2425
+            start_date = self.date_of_birth
+            end_date = datetime.date.today()
+            age = round((end_date - start_date).days // year)
+            return age
+        return 0
+    
     class PydanticMeta:
-        computed = ["full_name"]
-        exclude = ('full_name')
+        computed = ["full_name","age"]
+        exclude = ('full_name',"age")
 
 
 User_Pydantic = pydantic_model_creator(User, name="User", exclude=[
