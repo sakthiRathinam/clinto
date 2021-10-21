@@ -66,10 +66,20 @@ class BaseService:
             extra['next'] = False
         data = {**paginated_data.dict(), **extra}
         return data
-    async def limited_data(self, **kwargs) -> Optional[ModelType]:
-        if 'limit' and 'offset' in kwargs:
-            return await self.model.all().offset(kwargs['offset']).limit(kwargs['limit'])
-        return "enter required info"
+    async def limited_data(self, offset,limit,**kwargs) -> Optional[ModelType]:
+        toReturn = {
+            'total':None,
+            'prev':False,
+            'next':True,
+            'data':None,
+        }
+        toReturn['total'] = await self.model.filter(**kwargs).count()
+        if offset+limit+1 > toReturn['total']:
+            toReturn['next'] = False
+        if offset != 0:
+            toReturn['prev'] = True
+        toReturn['data'] =  await self.model.filter(**kwargs).offset(offset).limit(limit)
+        return toReturn
     
 
 ######################Base Functions###############################

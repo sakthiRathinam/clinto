@@ -21,6 +21,15 @@ Create_Medicine = pydantic_model_creator(
     Medicine, name="mainmediciens", exclude=("id", "created", "updated"))
 Create_Reports = pydantic_model_creator(
     MedicalReports, name="medicalreports", exclude=("id", "created", "updated"))
+Create_PharmacyOwners = pydantic_model_creator(
+    PharmacyOwners, name="PharmacyOwners", exclude=("id", "created", "updated"))
+Create_LabOwners = pydantic_model_creator(
+    LabOwners, name="LabOwners", exclude=("id", "created", "updated"))
+Create_ClinicZones = pydantic_model_creator(
+    ClinicZones, name="ClinicZones", exclude=("id", "created", "updated", "active"))
+# Create_ClinicVerification = pydantic_model_creator(
+#     ClinicVerification, name="clinicverification", exclude=("id", "created", "updated", 'verified'))
+
 GET_Clinic = pydantic_model_creator(
     Clinic, name="ClinicGet")
 GET_Recopinist = pydantic_model_creator(
@@ -37,8 +46,16 @@ GET_Prescription = pydantic_model_creator(
     Prescription, name="prescription")
 GET_Medicine = pydantic_model_creator(
     Medicine, name="medicines")
+GET_PharmacyOwners = pydantic_model_creator(
+    PharmacyOwners, name="PharmacyOwners")
+GET_LabOwners = pydantic_model_creator(
+    LabOwners, name="LabOwners")
 GET_Reports = pydantic_model_creator(
-    MedicalReports, name="reports")
+    MedicalReports, name="MedicalReports")
+GET_ClinicZones = pydantic_model_creator(
+    ClinicZones, name="ClinicZones")
+# GET_ClinicVerification = pydantic_model_creator(
+#     ClinicVerification, name="ClinicVerification")
 
 
 

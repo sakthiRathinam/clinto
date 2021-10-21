@@ -90,9 +90,12 @@ class ClinicTimings(models.Model):
     clinictimigs: fields.ReverseRelation["Clinic"]
     doctortimings: fields.ReverseRelation["ClinicDoctors"]
 
+class ClinicZones(models.Model):
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    title = fields.CharField(max_length=1000,unique=True)
+    active = fields.BooleanField(default=True)
 
-    
-    
 class Clinic(models.Model):
     name = fields.CharField(max_length=400, index=True)
     email = fields.CharField(max_length=600,null=True,blank=True)
@@ -105,8 +108,10 @@ class Clinic(models.Model):
     total_ratings = fields.IntField(default=0)
     city = fields.CharField(null=True, max_length=500, blank=True)
     state = fields.CharField(null=True, max_length=500, blank=True)
-    lat = fields.CharField(null=True, max_length=200, blank=True)
-    lang = fields.CharField(null=True, max_length=200, blank=True)
+    lat = fields.CharField(null=True, max_length=500)
+    lang = fields.CharField(null=True, max_length=500)
+    zone: fields.ForeignKeyRelation[ClinicZones] = fields.ForeignKeyField(
+        "models.Clinic", related_name="clinicavailable",null=True, blank=True)
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)
     display_picture = fields.CharField(null=True, max_length=2000,blank=True)
@@ -150,6 +155,24 @@ class ClinicDoctors(models.Model):
     subs = fields.BooleanField(default=False)
     
     
+class PharmacyOwners(models.Model):
+    user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        "models.User", related_name="pharmacyownersusers")
+    clinic: fields.ForeignKeyRelation[Clinic] = fields.ForeignKeyField(
+        "models.Clinic", related_name="pharmacyownersusers")
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    starttime_str = fields.CharField(max_length=600, null=True, blank=True)
+    endtime_str = fields.CharField(max_length=600, null=True, blank=True)
+class LabOwners(models.Model):
+    user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        "models.User", related_name="labownerusers")
+    clinic: fields.ForeignKeyRelation[Clinic] = fields.ForeignKeyField(
+        "models.Clinic", related_name="labownersusers")
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    starttime_str = fields.CharField(max_length=600, null=True, blank=True)
+    endtime_str = fields.CharField(max_length=600, null=True, blank=True)
 class ClinicReceponists(models.Model):
     created = fields.DatetimeField(auto_now_add=True)
     updated = fields.DatetimeField(auto_now=True)

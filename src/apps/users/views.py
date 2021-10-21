@@ -174,6 +174,29 @@ async def search_users(role: Roles, name: str, user : str=Depends(get_current_lo
     return toReturn[:5]
 
 
+@user_router.post('/addClinicverification')
+async def add_medicines(data: Create_ClinicVerification = Body(...)):
+    add_medicine = await clinic_verify.create(data)
+    return {"medicine": "clinic verfication registered successfully you will receive a call within 3 working days"}
+
+
+@user_router.delete('/deleteClinicverification')
+async def delete_medicines(id: int):
+    await clinic_verify.delete(id=id)
+    return {"success": "deleted"}
+
+
+@user_router.put('/editClinicverification')
+async def update_medicines(id: int, data: Create_ClinicVerification = Body(...)):
+    await clinic_verify.update(data, id=id)
+    return {"success": "updated"}
+
+
+@user_router.put('/filterClinicverification')
+async def filter_medicines(data: GET_ClinicVerification = Body(...)):
+    await clinic_verify.filter(**data.dict(exclude_unset=True))
+    return {"success": "updated"}
+
 
 async def common_parameters(q: Optional[str] = None, skip: int = 0, limit: int = 100):
     return {"q": q, "skip": skip, "limit": limit}

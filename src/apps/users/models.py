@@ -48,6 +48,13 @@ class Permissions(models.Model):
     permissions: fields.ReverseRelation["User"]
     
 
+class ClinicVerification(models.Model):
+    created = fields.DatetimeField(auto_now_add=True)
+    updated = fields.DatetimeField(auto_now=True)
+    name = fields.CharField(max_length=700, index=True)
+    email = fields.CharField(max_length=800, null=True, blank=True)
+    mobile = fields.CharField(max_length=20, null=True, blank=True)
+    verified = fields.BooleanField(default=False)
 
 
 class User(models.Model):
@@ -124,5 +131,7 @@ async def signal_post_doctor(
             await instance.save()
 
     
-
-
+Create_ClinicVerification = pydantic_model_creator(
+    ClinicVerification, name="clinicverification", exclude=("id", "created", "updated", 'verified'))
+GET_ClinicVerification = pydantic_model_creator(
+    ClinicVerification, name="ClinicVerification")

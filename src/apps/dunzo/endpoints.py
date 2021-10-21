@@ -23,6 +23,10 @@ from fastapi_pagination.ext.tortoise import paginate
 import datetime
 dunzo_router = APIRouter(dependencies=[Depends(get_current_login)])
 
+@dunzo_router.post('/createUserOrder')
+async def create_user_orders():
+    pass
+
 
 
 

@@ -79,3 +79,8 @@ class CreateClinic(BaseModel):
     pincode: str
     active: Optional[bool] = True
     
+class FilterPharOwners(BaseModel):
+    clinic_id:Optional[int] = None
+    user_id:Optional[int] = None
+    endtime_str: Optional[str] = None
+    starttime_str: Optional[str] = None

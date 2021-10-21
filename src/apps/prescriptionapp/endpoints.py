@@ -32,8 +32,14 @@ async def getClinics(userid: int):
 
 
 @clinto_router.post('/createClinic')
-async def createClinic(clinic: Create_Clinic = Body(...)):
-    clinic_obj = await Clinic.create(**clinic.dict(exclude_unset=True))
+async def createClinic(clinic: Create_Clinic = Body(...),zone_id:Optional[int]=Body(...)):
+    if zone_id is None:
+        clinic_obj = await Clinic.create(**clinic.dict(exclude_unset=True))
+    else:
+        clinic_obj = await Clinic.create(**clinic.dict(exclude_unset=True),zone_id=zone_id)
+
+        
+    
     # path = pathlib.Path(
     #     MEDIA_ROOT, f"clinicmainimages/{str(clinic_obj.id)+file.filename}")
     # os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -46,13 +52,31 @@ async def createClinic(clinic: Create_Clinic = Body(...)):
     return clinic_obj
     
 @clinto_router.get('/getClinics')
-async def get_clinics(limit: int = 10, offset: int = 0, type: Optional[SubTypes]=SubTypes.normal):
-    clinics = await clinic_view.limited_data(limit=limit, offset=offset)
+async def get_clinics(limit: int = 10, offset: int = 0, type: Optional[Types] = Types.Clinic,id:Optional[int]=None):
+    if id is not None:
+        clinic = await Clinic.get(id=id)
+        timings = await clinic.timings.all().values('timings', 'day')
+        return {"clinic_data": clinic, "timings": timings}
+    clinics = await clinic_view.limited_data(limit=limit, offset=offset, types=type)
     clinics_objs = []
-    for clinic in clinics:
+    for clinic in clinics['data']:
         timings = await clinic.timings.all().values('timings','day')
         clinics_objs.append({"clinic_data": clinic, "timings": timings})
-    return clinics_objs
+    return {**clinics, "data": clinics_objs}
+
+@clinto_router.put('/editClinic')
+async def edit_clinic(clinic:int,data:Create_Clinic = Body(...)):
+    updated_clinic = await Clinic.filter(id=clinic).update(**data.dict(exclude_unset=True))
+    return {"clinic updated successfully"}
+
+@clinto_router.delete('/deleteClinic/{clinic}')
+async def edit_clinic(clinic:int):
+    updated_clinic = await Clinic.get(id=clinic).delete()
+    return {"clinic delete successfully"}
+@clinto_router.put('/editClinic')
+async def edit_clinic(clinic:int,data:Create_Clinic = Body(...)):
+    updated_clinic = await Clinic.filter(id=clinic).update(**data.dict(exclude_unset=True))
+    return {"clinic updated successfully"}
 
 @clinto_router.post('/addDoctors')
 async def add_doctors(data: Create_Doctor, user: User_Pydantic,clinic: int = Body(...)):
@@ -84,6 +108,8 @@ async def clinic_images(clinic: int,files: List[UploadFile] = File(...)):
         file_paths.append(str(path))
         with path.open('wb') as write:
             shutil.copyfileobj(file.file, write)
+    if clinic_obj.clinic_images is not None:
+        clinic_obj.clinic_images.extend(file_paths)
     clinic_obj.clinic_images = file_paths
     await clinic_obj.save()
     return clinic_obj
@@ -199,7 +225,7 @@ async def get_prescriptions(clinic:Optional[int]=None,doctor:Optional[int]=None,
         pres_objs = await Prescription.filter(clinic_id=clinic)
     if doctor is not None:
         doctor_objs = await Prescription.filter(doctor)
-            
+    
         
         
 
@@ -306,10 +332,87 @@ async def update_medicines(id:int,data:Create_Medicine= Body(...)):
     await medicine_view.update(data,id=id)
     return {"success":"updated"}
 
-@clinto_router.put('/filtermedicines')
+@clinto_router.get('/filtermedicines')
 async def filter_medicines(data: GET_Medicine = Body(...)):
     await medicine_view.filter(**data.dict(exclude_unset=True))
     return {"success":"updated"}
+
+@clinto_router.post('/addPharamacyOwners')
+async def add_medicines(data: Create_PharmacyOwners = Body(...),clinic:int=Body(...),user:int=Body(...)):
+    add_medicine = await PharmacyOwners.create(**data.dict(exclude_unset=True),user_id=user,clinic_id=clinic)
+    return {"success":"created successfully"}
+
+@clinto_router.delete('/deletePharOwners')
+async def delete_pharowners(id:int):
+    await pharmacy_owner_view.delete(id=id)
+    return {"success":"deleted"}
+
+@clinto_router.put('/updatePharOwners')
+async def update_pharowners(id:int,data:Create_PharmacyOwners= Body(...)):
+    await pharmacy_owner_view.update(data, id=id)
+    return {"success":"updated"}
+
+@clinto_router.get('/filterPharOwners')
+async def filterPharOwners(clinic_id:Optional[int]=None,user_id:Optional[int]=None):
+    if clinic_id is not None:
+        owners = await PharmacyOwners.filter(clinic_id=clinic_id).prefetch_related('user')
+    owner_list = []
+    for owner in owners:
+        user = await owner.user
+        user_obj = {"name":user.first_name + " "+user.last_name,"mobile":user.mobile,"dp":user.display_picture}
+        owner_list.append({"owner":owner,"userdetail":user_obj})
+    return {**owners, "data": owner_list}
+
+@clinto_router.get('/getPharOwners')
+async def get_phar_owners(limit:int=10,offset:int=0):
+    owners = await pharmacy_owner_view.limited_data(limit=limit, offset=offset)
+    owner_list = []
+    for owner in owners['data']:
+        user = await owner.user
+        user_obj = {"name": user.first_name + " "+user.last_name,
+                    "mobile": user.mobile, "dp": user.display_picture}
+        owner_list.append({"owner": owner, "userdetail": user_obj})
+    return {**owners,"data":owner_list}
+@clinto_router.get('/getLabOwners')
+async def get_lab_owners(limit:int=10,offset:int=0):
+    owners = await lab_owner_view.limited_data(limit=limit, offset=offset)
+    owner_list = []
+    for owner in owners['data']:
+        user = await owner.user
+        user_obj = {"name": user.first_name + " "+user.last_name,
+                    "mobile": user.mobile, "dp": user.display_picture}
+        owner_list.append({"owner": owner, "userdetail": user_obj})
+    return owner_list
+@clinto_router.post('/addLabOwners')
+async def add_medicines(data: Create_LabOwners = Body(...),clinic: int = Body(...), user: int = Body(...)):
+    add_medicine = await LabOwners.create(**data.dict(exclude_unset=True), user_id=user, clinic_id=clinic)
+    return {"success": "created successfully"}
+
+@clinto_router.delete('/deleteLabOwners')
+async def delete_medicines(id:int):
+    await lab_owner_view.get(id=id).delete()
+    return {"success":"deleted"}
+
+@clinto_router.put('/updateLabOwners')
+async def update_medicines(id: int, data: Create_LabOwners = Body(...)):
+    await lab_owner_view.update(data, id=id)
+    return {"success":"updated"}
+
+
+@clinto_router.get('/filterlabOwners')
+async def filter_lab_owners(clinic_id: Optional[int] = None, user_id: Optional[int] = None):
+    if clinic_id is not None:
+        owners = await LabOwners.filter(clinic_id=clinic_id).prefetch_related('user')
+    owner_list = []
+    for owner in owners:
+        user = await owner.user
+        user_obj = {"name": user.first_name + " "+user.last_name,
+                    "mobile": user.mobile, "dp": user.display_picture}
+        owner_list.append({"owner": owner, "userdetail": user_obj})
+    return {**owners, "data": owner_list}
+
+
+
 
 @clinto_router.get('/mainMedicines')
 async def main_medicines(limit:int=10,offset:int=0,active:bool=True,search:bool=False):
@@ -344,6 +447,26 @@ async def filter_medicines(data: GET_Reports = Body(...)):
     await report_view.filter(**data.dict(exclude_unset=True))
     return {"success":"updated"}
 
+@clinto_router.post('/create')
+async def add_medicines(data: Create_ClinicZones = Body(...)):
+    create_obj = await clinic_zones.create(data)
+    return {"success":"created successfully"}
+
+@clinto_router.delete('/deleteReports')
+async def delete_medicines(id:int):
+    await clinic_zones.delete(id=1)
+    return {"success":"deleted"}
+
+@clinto_router.put('/updateReports')
+async def update_medicines(id: int, data: Create_ClinicZones = Body(...)):
+    await clinic_zones.update(data, id=id)
+    return {"success":"updated"}
+
+@clinto_router.put('/filterReports')
+async def filter_medicines(data: Create_ClinicZones = Body(...)):
+    await clinic_zones.filter(**data.dict(exclude_unset=True))
+    return {"success":"updated"}
+
 @clinto_router.get('/paginateMedicines', response_model=CustomPage[GET_Medicine])
 async def paginate_mediciens(request: Request) -> any:
     medicines = await paginate(Medicine.all())
@@ -354,6 +477,13 @@ async def paginate_mediciens(request: Request) -> any:
         extra['next'] = False
     data = {**medicines.dict(),**extra}
     return medicines
+
+
+
+
+
+
+
 
 
 

@@ -7,7 +7,7 @@ from tortoise.models import Model
 from tortoise.signals import post_delete, post_save, pre_delete, pre_save
 from src.apps.users.models import User
 from src.apps.base.additionalfields import StringArrayField
-from src.apps.prescriptionapp.models import Clinic
+from src.apps.prescriptionapp.models import Clinic, PresMedicines, Prescription
 
 
 class DunzoState(str, Enum):
@@ -52,8 +52,17 @@ class CreateUserOrder(models.Model):
     acceptedclinics: fields.ManyToManyRelation["Clinic"] = fields.ManyToManyField(
         "models.Clinic", related_name="acceptedorders"
     )
+    required_medicines: fields.ManyToManyRelation["PresMedicines"] = fields.ManyToManyField(
+        "models.PresMedicines", related_name="requiredmedicines"
+    )
     order_mode: DunzoState = fields.CharEnumField(
         DunzoState, default=DunzoState.PENDING)
+    medical_store: fields.ForeignKeyRelation[Clinic] = fields.ForeignKeyField(
+        "models.Clinic", related_name="useracceptedorders", null=True, blank=True)
+    prescription: fields.ForeignKeyRelation[Prescription] = fields.ForeignKeyField(
+        "models.Prescription", related_name="prescriptionorders", null=True, blank=True)
+    user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
+        "models.User", related_name="usercreatedorders")
     user_lat = fields.CharField(max_length=600, null=True, blank=True)
     user_lang = fields.CharField(max_length=600, null=True, blank=True)
     medical_lat = fields.CharField(max_length=600, null=True, blank=True)
@@ -73,7 +82,6 @@ class DunzoOrder(models.Model):
         "models.Clinic", related_name="medicaldunzoorders", null=True, blank=True)
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
         "models.User", related_name="userdunzoorders")
-    
     task_id = fields.CharField(max_length=500, null=True, blank=True)
     order_id = fields.CharField(max_length=300, null=True, blank=True)
     payment_id = fields.CharField(max_length=300, null=True, blank=True)
@@ -94,7 +102,7 @@ class DunzoOrder(models.Model):
     payment_method: DunzoPayments = fields.CharEnumField(
         DunzoPayments, default=DunzoPayments.DUNZO_CREDIT)
     main_order: fields.ForeignKeyRelation[CreateUserOrder] = fields.ForeignKeyField(
-        "models.CreateUserOrder", related_name="dunzocompletedorders", null=True, blank=True)
+        "models.CreateUserOrder", related_name="createuserorders", null=True, blank=True)
 
 
 

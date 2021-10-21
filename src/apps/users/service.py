@@ -51,8 +51,10 @@ class UserService(BaseService):
         return await self.create(self.create_schema(**user.dict(exclude={'password'}),password=hashed_password,is_superuser=True,**kwargs))
 
     
-        
-
+class ClinicVerifyViewSet(BaseService):
+    model = ClinicVerification
+    get_schema = Create_ClinicVerification
 
 
 user_service = UserService()
+clinic_verify = ClinicVerifyViewSet()
